@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SmartStock – Inventory Management System</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Archivo+Narrow:wght@600;700&display=swap">
+<style>
+:root{--bg:#eef2f5;--panel:#fff;--ink:#14233b;--mute:#5d6b80;--line:#d8e0e8;--acc:#0e7c86;--accink:#fff;--warn:#a96a00;--bad:#c8382f;--ok:#2a7a4b;--side:#14233b}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1826;--panel:#17243a;--ink:#e6edf6;--mute:#9aa9bd;--line:#26364f;--acc:#3cc0cb;--accink:#06222a;--warn:#e8a93a;--bad:#ff7b72;--ok:#58c88a;--side:#0a111d}}
+*{box-sizing:border-box}
+body{margin:0;font-family:Archivo,system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+h1,h2,h3{font-family:"Archivo Narrow",Archivo,sans-serif;margin:0;letter-spacing:.2px}
+.app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+aside{background:var(--side);color:#e6edf6;padding:20px 14px;position:sticky;top:0;height:100vh}
+.brand{font:700 26px "Archivo Narrow",sans-serif;padding:0 10px 18px}
+.brand span{color:#3cc0cb}
+nav a{display:block;color:#b9c6d8;text-decoration:none;padding:10px 12px;border-radius:6px;margin-bottom:2px;font-weight:600}
+nav a:hover{background:#ffffff14}
+nav a.on{background:#3cc0cb;color:#06222a}
+nav a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+main{padding:28px;max-width:1100px;width:100%}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.head h1{font-size:34px}.head p{margin:2px 0 0;color:var(--mute)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+.tile{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--acc);border-radius:8px;padding:14px 16px}
+.tile.w{border-left-color:var(--warn)}
+.tile b{display:block;font:700 30px "Archivo Narrow",sans-serif}
+.tile small{color:var(--mute)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:14px;overflow-x:auto}
+.card h2{font-size:20px;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--mute);font-weight:600}
+.badge{padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid currentColor}
+.in{color:var(--ok)}.low{color:var(--warn)}.out{color:var(--bad)}
+button,.btn{font:600 14px Archivo,sans-serif;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 14px;border-radius:6px;cursor:pointer}
+button.pri{background:var(--acc);color:var(--accink);border-color:var(--acc)}
+button.del{color:var(--bad)}
+input,select{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);width:100%}
+.bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.bar input,.bar select{width:auto;flex:1 1 160px}
+.cat{display:grid;grid-template-columns:110px 1fr 80px;gap:10px;align-items:center;margin:8px 0;font-size:14px}
+.track{background:var(--bg);border-radius:4px;height:14px}.fill{background:var(--acc);height:100%;border-radius:4px}
+.alert{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.alert small{color:var(--mute)}
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:22px;width:min(440px,92vw)}
+dialog::backdrop{background:#0008}
+dialog label,.form label{display:block;font-size:13px;color:var(--mute);margin:10px 0 0}
+.row{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 12px;align-items:end}
+.form button{margin-top:10px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:6px;opacity:0;transition:opacity .25s;pointer-events:none}
+#toast.show{opacity:1}
+.empty{color:var(--mute);padding:14px 0}
+.about p{max-width:70ch}
+@media(max-width:800px){
+.app{grid-template-columns:1fr}
+aside{position:static;height:auto;padding:12px}
+.brand{padding-bottom:8px}
+nav{display:flex;gap:4px;overflow-x:auto}
+nav a{white-space:nowrap;margin:0}
+main{padding:16px}.two{grid-template-columns:1fr}.head h1{font-size:28px}
+.cat{grid-template-columns:90px 1fr 70px}
+}
+@media(prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside>
+<div class="brand">Smart<span>Stock</span></div>
+<nav id="nav"></nav>
+</aside>
+<main id="view"></main>
+</div>
+<dialog id="dlg"></dialog>
+<div id="toast" role="status"></div>
+
+<script>
+const K = 'smartstock-v1';
+const $ = s => document.querySelector(s);
+const e = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => '$' + Number(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+const today = () => new Date().toISOString().slice(0,10);
+
+function seed() {
+  const P = (id,sku,name,cat,price,qty,reorder,sup) => ({id,sku,name,cat,price,qty,reorder,sup});
+  return {
+    nid: 100,
+    suppliers: [
+      {id:1,name:'TechSource Ltd',email:'sales@techsource.example',phone:'+1 555 0101'},
+      {id:2,name:'OfficeHub Co',email:'orders@officehub.example',phone:'+1 555 0102'},
+      {id:3,name:'NetWorks Supply',email:'hello@networks.example',phone:'+1 555 0103'}
+    ],
+    products: [
+      P(1,'EL-1001','Wireless Mouse M3','Electronics',14.5,64,20,1),
+      P(2,'EL-1002','Mechanical Keyboard K8','Electronics',49,18,20,1),
+      P(3,'EL-1003','27" Monitor','Electronics',165,22,8,1),
+      P(4,'EL-1004','USB-C Hub 7-in-1','Electronics',22,6,25,1),
+      P(5,'OF-2001','A4 Paper (500 sheets)','Office Supplies',4.2,240,80,2),
+      P(6,'OF-2002','Ballpoint Pens (box)','Office Supplies',3.1,0,50,2),
+      P(7,'FU-3001','Ergonomic Chair','Furniture',120,12,5,2),
+      P(8,'FU-3002','Standing Desk 140cm','Furniture',280,3,4,2),
+      P(9,'NW-4001','Cat6 Cable 10m','Networking',6.5,85,30,3),
+      P(10,'NW-4002','8-Port Gigabit Switch','Networking',29,7,10,3)
+    ],
+    moves: [
+      {id:1,date:today(),pid:1,type:'in',qty:30,note:'Weekly restock'},
+      {id:2,date:today(),pid:6,type:'out',qty:50,note:'Office order'}
+    ]
+  };
+}
+let db;
+try { db = JSON.parse(localStorage.getItem(K)); } catch (x) {}
+if (!db) db = seed();
+const save = () => { try { localStorage.setItem(K, JSON.stringify(db)); } catch (x) {} };
+const status = p => p.qty <= 0 ? ['Out of stock','out'] : p.qty <= p.reorder ? ['Low stock','low'] : ['In stock','in'];
+const pname = id => (db.products.find(p => p.id == id) || {name:'(deleted)'}).name;
+const sname = id => (db.suppliers.find(s => s.id == id) || {name:'-'}).name;
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2200); }
+
+const pages = [['dashboard','Dashboard'],['products','Products'],['movements','Stock movements'],['suppliers','Suppliers'],['reports','Reports'],['about','About']];
+
+function render() {
+  const pg = location.hash.replace('#/','') || 'dashboard';
+  $('#nav').innerHTML = pages.map(([k,l]) => `<a href="#/${k}" class="${k===pg?'on':''}">${l}</a>`).join('');
+  $('#view').innerHTML = (views[pg] || views.dashboard)();
+  document.title = 'SmartStock – ' + (pages.find(x => x[0]===pg) || pages[0])[1];
+}
+addEventListener('hashchange', render);
+
+const views = {
+dashboard() {
+  const P = db.products, val = P.reduce((s,p) => s + p.price*p.qty, 0);
+  const alerts = P.filter(p => p.qty <= p.reorder);
+  const cats = {}; P.forEach(p => cats[p.cat] = (cats[p.cat]||0) + p.price*p.qty);
+  const max = Math.max(1, ...Object.values(cats));
+  return `<div class="head"><div><h1>Dashboard</h1><p>Your stock at a glance.</p></div><a class="btn pri" href="#/products">Manage products</a></div>
+  <div class="tiles">
+   <div class="tile"><small>Total products</small><b>${P.length}</b><small>${P.reduce((s,p)=>s+p.qty,0)} units on hand</small></div>
+   <div class="tile"><small>Inventory value</small><b>${money(val)}</b><small>At cost price</small></div>
+   <div class="tile w"><small>Low stock</small><b>${alerts.filter(p=>p.qty>0).length}</b><small>Need reordering</small></div>
+   <div class="tile w"><small>Out of stock</small><b>${P.filter(p=>p.qty<=0).length}</b><small>Restock now</small></div>
+  </div>
+  <div class="two">
+   <div class="card"><h2>Stock value by category</h2>${Object.entries(cats).map(([c,v]) => `<div class="cat"><span>${e(c)}</span><div class="track"><div class="fill" style="width:${v/max*100}%"></div></div><b>${money(v)}</b></div>`).join('') || '<p class="empty">No products yet.</p>'}</div>
+   <div class="card"><h2>Needs attention</h2>${alerts.map(p => `<div class="alert"><div>${e(p.name)}<br><small>${e(p.sku)} · ${p.qty} left, reorder at ${p.reorder}</small></div><span class="badge ${status(p)[1]}">${status(p)[0]}</span></div>`).join('') || '<p class="empty">Everything is stocked.</p>'}</div>
+  </div>`;
+},
+products() {
+  const cats = [...new Set(db.products.map(p => p.cat))];
+  return `<div class="head"><div><h1>Products</h1><p>Add, edit and track every item.</p></div><button class="pri" onclick="productDlg()">Add product</button></div>
+  <div class="bar"><input id="q" placeholder="Search name or SKU" oninput="filt()" aria-label="Search"><select id="cf" onchange="filt()" aria-label="Category"><option value="">All categories</option>${cats.map(c=>`<option>${e(c)}</option>`).join('')}</select></div>
+  <div class="card"><table><thead><tr><th>SKU</th><th>Name</th><th>Category</th><th>Price</th><th>Qty</th><th>Status</th><th></th></tr></thead><tbody id="pb">${prodRows(db.products)}</tbody></table></div>`;
+},
+movements() {
+  return `<div class="head"><div><h1>Stock movements</h1><p>Record stock coming in or going out.</p></div></div>
+  <div class="card"><form class="form" onsubmit="addMove(event)">
+   <label>Product<select name="pid" required>${db.products.map(p=>`<option value="${p.id}">${e(p.name)} (${p.qty})</option>`).join('')}</select></label>
+   <label>Type<select name="type"><option value="in">Stock in</option><option value="out">Stock out</option></select></label>
+   <label>Quantity<input name="qty" type="number" min="1" required></label>
+   <label>Note<input name="note" placeholder="Optional"></label>
+   <button class="pri">Record movement</button></form></div>
+  <div class="card"><h2>History</h2><table><thead><tr><th>Date</th><th>Product</th><th>Type</th><th>Qty</th><th>Note</th></tr></thead><tbody>${[...db.moves].reverse().slice(0,30).map(m=>`<tr><td>${m.date}</td><td>${e(pname(m.pid))}</td><td><span class="badge ${m.type==='in'?'in':'out'}">${m.type==='in'?'Stock in':'Stock out'}</span></td><td>${m.qty}</td><td>${e(m.note)}</td></tr>`).join('')}</tbody></table></div>`;
+},
+suppliers() {
+  return `<div class="head"><div><h1>Suppliers</h1><p>Who you buy from.</p></div></div>
+  <div class="card"><form class="form" onsubmit="addSup(event)"><label>Name<input name="name" required></label><label>Email<input name="email" type="email"></label><label>Phone<input name="phone"></label><button class="pri">Add supplier</button></form></div>
+  <div class="card"><table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Products</th><th></th></tr></thead><tbody>${db.suppliers.map(s=>`<tr><td>${e(s.name)}</td><td>${e(s.email)}</td><td>${e(s.phone)}</td><td>${db.products.filter(p=>p.sup==s.id).length}</td><td><button class="del" onclick="delSup(${s.id})">Delete</button></td></tr>`).join('')}</tbody></table></div>`;
+},
+reports() {
+  const low = db.products.filter(p => p.qty <= p.reorder), val = db.products.reduce((s,p)=>s+p.price*p.qty,0);
+  return `<div class="head"><div><h1>Reports</h1><p>Reorder list and inventory valuation.</p></div><button class="pri" onclick="csv()">Export CSV</button></div>
+  <div class="tiles"><div class="tile"><small>Total inventory value</small><b>${money(val)}</b></div><div class="tile w"><small>Items to reorder</small><b>${low.length}</b></div></div>
+  <div class="card"><h2>Reorder report</h2><table><thead><tr><th>SKU</th><th>Name</th><th>Qty</th><th>Reorder at</th><th>Supplier</th><th>Status</th></tr></thead><tbody>${low.map(p=>`<tr><td>${e(p.sku)}</td><td>${e(p.name)}</td><td>${p.qty}</td><td>${p.reorder}</td><td>${e(sname(p.sup))}</td><td><span class="badge ${status(p)[1]}">${status(p)[0]}</span></td></tr>`).join('') || '<tr><td class="empty">Nothing to reorder.</td></tr>'}</tbody></table></div>`;
+},
+about() {
+  return `<div class="head"><div><h1>About SmartStock</h1></div></div><div class="card about"><p>SmartStock is an inventory management system for small businesses. Track products, record stock coming in and going out, manage suppliers, and see what needs reordering.</p><p>All data is saved in your browser, so it stays on this device. Use Reports to export your inventory as a CSV file.</p><p><button onclick="resetData()">Reset sample data</button></p></div>`;
+}
+};
+
+function prodRows(list) {
+  return list.map(p => `<tr><td>${e(p.sku)}</td><td>${e(p.name)}</td><td>${e(p.cat)}</td><td>${money(p.price)}</td><td>${p.qty}</td><td><span class="badge ${status(p)[1]}">${status(p)[0]}</span></td><td><button onclick="productDlg(${p.id})">Edit</button> <button class="del" onclick="delProd(${p.id})">Delete</button></td></tr>`).join('') || '<tr><td class="empty">No products match.</td></tr>';
+}
+function filt() {
+  const q = $('#q').value.toLowerCase(), c = $('#cf').value;
+  $('#pb').innerHTML = prodRows(db.products.filter(p => (!c || p.cat === c) && (p.name + p.sku).toLowerCase().includes(q)));
+}
+function productDlg(id) {
+  const p = db.products.find(x => x.id == id) || {name:'',sku:'',cat:'',price:'',qty:0,reorder:10,sup:db.suppliers[0]?.id};
+  const d = $('#dlg');
+  d.innerHTML = `<form id="pf"><h2>${id ? 'Edit product' : 'Add product'}</h2>
+  <label>Name<input name="name" required value="${e(p.name)}"></label>
+  <label>SKU<input name="sku" required value="${e(p.sku)}"></label>
+  <label>Category<input name="cat" required value="${e(p.cat)}"></label>
+  <label>Price<input name="price" type="number" step="0.01" min="0" required value="${p.price}"></label>
+  <label>Quantity<input name="qty" type="number" min="0" required value="${p.qty}"></label>
+  <label>Reorder level<input name="reorder" type="number" min="0" required value="${p.reorder}"></label>
+  <label>Supplier<select name="sup">${db.suppliers.map(s=>`<option value="${s.id}" ${s.id==p.sup?'selected':''}>${e(s.name)}</option>`).join('')}</select></label>
+  <div class="row"><button type="button" onclick="dlg.close()">Cancel</button><button class="pri">Save product</button></div></form>`;
+  d.showModal();
+  $('#pf').onsubmit = ev => {
+    ev.preventDefault();
+    const f = Object.fromEntries(new FormData(ev.target));
+    const o = {name:f.name.trim(), sku:f.sku.trim(), cat:f.cat.trim(), price:+f.price, qty:+f.qty, reorder:+f.reorder, sup:+f.sup};
+    if (id) Object.assign(db.products.find(x => x.id == id), o); else db.products.push({id:db.nid++, ...o});
+    save(); d.close(); render(); toast('Product saved');
+  };
+}
+function delProd(id) { if (confirm('Delete this product?')) { db.products = db.products.filter(p => p.id != id); save(); render(); toast('Product deleted'); } }
+function addMove(ev) {
+  ev.preventDefault();
+  const f = Object.fromEntries(new FormData(ev.target)), p = db.products.find(x => x.id == f.pid), q = +f.qty;
+  if (f.type === 'out' && q > p.qty) return toast('Only ' + p.qty + ' in stock');
+  p.qty += f.type === 'in' ? q : -q;
+  db.moves.push({id:db.nid++, date:today(), pid:p.id, type:f.type, qty:q, note:f.note});
+  save(); render(); toast('Movement recorded');
+}
+function addSup(ev) { ev.preventDefault(); const f = Object.fromEntries(new FormData(ev.target)); db.suppliers.push({id:db.nid++, ...f}); save(); render(); toast('Supplier added'); }
+function delSup(id) { if (confirm('Delete this supplier?')) { db.suppliers = db.suppliers.filter(s => s.id != id); save(); render(); toast('Supplier deleted'); } }
+function csv() {
+  const rows = [['SKU','Name','Category','Price','Qty','Reorder level','Supplier','Status']].concat(db.products.map(p => [p.sku,p.name,p.cat,p.price,p.qty,p.reorder,sname(p.sup),status(p)[0]]));
+  const t = rows.map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(',')).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([t], {type:'text/csv'})); a.download = 'smartstock-inventory.csv'; a.click();
+  toast('CSV exported');
+}
+function resetData() { if (confirm('Reset all data to the sample set?')) { db = seed(); save(); render(); toast('Sample data restored'); } }
+render();
+</script>
+</body>
+</html>
